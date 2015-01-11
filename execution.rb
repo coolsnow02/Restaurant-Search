@@ -3,4 +3,4 @@
 
 require File.dirname(__FILE__) + '/lib/application.rb'
 raise Search::CommandError if ARGV.size < 2
-puts Search::DataInput.accept(ARGV[0], ARGV[1..-1])
+puts Search.accept(ARGV[0], ARGV[1..-1])

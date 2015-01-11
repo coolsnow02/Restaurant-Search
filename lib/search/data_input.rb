@@ -10,8 +10,9 @@ module Search
       @csv = csv
       @searched_items = searched_items
       validate_file
-      restaurants = Search::Restaurant.new(@csv)
-      # result = restaurants.best_deal(@searched_items)
+      restaurants = Restaurant.new(@csv)
+      puts restaurants.inspect
+      result = restaurants.my_best_deal(@searched_items)
       # result ? "#{result[0]}, #{result[1]}" : nil
     end
 
