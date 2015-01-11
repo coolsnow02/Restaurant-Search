@@ -11,9 +11,8 @@ module Search
       @searched_items = searched_items
       validate_file
       restaurants = Restaurant.new(@csv)
-      puts restaurants.inspect
       result = restaurants.my_best_deal(@searched_items)
-      # result ? "#{result[0]}, #{result[1]}" : nil
+      result ? "#{result[0]} #{result[1]}" : 'nil'
     end
 
     protected
