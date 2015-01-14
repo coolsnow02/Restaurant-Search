@@ -38,51 +38,43 @@ module Search
 
     # Parses each row of the CSV file, and validates the data.
     def	parse_file
-      CSV.foreach(@file) do |row|
-        begin
-          restaurant_id, price, item = row[0].strip.to_i, row[1].strip.to_f, row[2..-1].map(&:strip).join('-').downcase
-          validate(restaurant_id, price, item) ? load(restaurant_id, price, item) : puts("Escaping invalid row: #{row}")
-        rescue StandardError
-          puts "Escaping incorrect row: #{row}"
+      # IO.foreach doesn't read the entire file into memory at once, which is good since a standard FasterCSV.parse on this file can take an hour or more
+      rows = []
+      IO.foreach(@file) do |row|
+        rows << row
+        if rows.size >= 1000
+          rows = CSV.parse(rows.join) rescue next
+          load rows
+          rows = []
         end
       end
+      load rows
     end
 
-    # perform minimum validation checks on the retaurant_id, price and item being added to the list
+    # perform minimum validation checks on the restaurant_id, price and item being added to the list
     def validate(restaurant_id, price, item)
       restaurant_id > 0 && price > 0.0 && !item.nil? && !item.empty?
     end
 
     # add the restaurant_id, price and menu_item to the restaurant_list hash
-    def	load(restaurant_id, price, menu_item)
-      item_id = item(menu_item)
-      @restaurant_menus[restaurant_id] = {} unless @restaurant_menus.has_key? restaurant_id
-      @restaurant_menus[restaurant_id][item_id] =  price
-    end
-
-    # returns the item_id of a given item and adds it if not present
-    def item(menu_item)
-      if @items.include?(menu_item)
-        @items.index(menu_item)
-      else
-        @items << menu_item
-        @items.length - 1
-      end
-    end
-
-# checks if the searched item is present in the item menus and creates an array of all possible combos.
-    def item_present?(item_labels)
-      flag = true
-      item_labels.each_with_index do |label, index|
-        @item_search[index] = @items.map { |item|  @items.index(item)  if item.match(/#{label.downcase}/) }.compact
-        if @item_search[index].empty?
-          flag = false
-          break
+    def	load(rows)
+      rows.each do |row|
+        restaurant_id, price, item = row[0].strip, row[1].strip, row[2..-1].map(&:strip).join('-').downcase
+        if validate(restaurant_id, price, item)
+          # @restaurant_menus[restaurant_id] = {} unless @restaurant_menus.has_key?(restaurant_id)
+          @restaurant_menus[restaurant_id.to_s].merge(price.to_s => item)
+        else
+          puts("Escaping invalid row: #{row}")
         end
       end
-      flag
     end
 
+
+    def item_present?(item_labels)
+      @restaurant_menus.each do |hash|
+        return if (hash.values & item_labels).sort == item_labels.sort
+      end
+    end
 
     # meal_combo is the intersection of ('item_search') item_id that contains all the search items
     def search_my_combo
